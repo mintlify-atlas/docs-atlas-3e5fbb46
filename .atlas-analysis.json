@@ -1,0 +1,111 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "CVA — Class Variance Authority",
+  "projectDescription": "A tiny TypeScript utility for building type-safe component class variants, bridging traditional CSS and modern utility-class approaches like Tailwind CSS.",
+  "theme": "willow",
+  "primaryColor": "#afafaf",
+  "lightColor": "#484848",
+  "darkColor": "#2b2b2b",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "getting-started/installation",
+              "getting-started/quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/variants",
+              "concepts/compound-variants",
+              "concepts/default-variants",
+              "concepts/extending-components",
+              "concepts/composing-components"
+            ]
+          },
+          {
+            "group": "TypeScript",
+            "pages": [
+              "typescript/variant-props",
+              "typescript/required-variants"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/tailwind-css",
+              "guides/tailwind-merge",
+              "guides/define-config"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/react",
+              "examples/vue",
+              "examples/svelte",
+              "examples/astro",
+              "examples/css-modules",
+              "examples/bem"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "faqs",
+              "migration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Functions",
+            "pages": [
+              "api/cva",
+              "api/cx",
+              "api/compose",
+              "api/define-config"
+            ]
+          },
+          {
+            "group": "Types",
+            "pages": [
+              "api/types/variant-props",
+              "api/types/class-value"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Type-safe component variants with full TypeScript inference",
+    "Compound variants for multi-condition class application",
+    "Default variants with optional per-call overrides",
+    "Framework-agnostic — works with React, Vue, Svelte, Astro, and more",
+    "First-class Tailwind CSS support with IntelliSense integration",
+    "Tiny bundle size (~1.6KB) built on top of clsx",
+    "Extensible via defineConfig with onComplete hooks",
+    "Supports class and className props for broad compatibility"
+  ],
+  "publicApiSurface": [
+    "cva(config) => (props) => string",
+    "cx(...inputs: ClassValue[]) => string",
+    "compose(...components) => (props) => string",
+    "defineConfig(options) => { cva, cx, compose }",
+    "VariantProps<Component>",
+    "ClassValue",
+    "CXOptions",
+    "CXReturn",
+    "DefineConfigOptions"
+  ]
+}

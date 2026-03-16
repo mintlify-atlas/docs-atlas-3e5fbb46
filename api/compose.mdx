@@ -1,0 +1,80 @@
+---
+title: "compose"
+description: "Combines multiple `cva` component functions into a single function with merged props."
+---
+
+<Warning>
+  `compose` is only available in the `cva` package (v1 beta). It is not included in `class-variance-authority` (stable).
+</Warning>
+
+## Overview
+
+`compose` takes two or more variant functions created by [`cva`](/api/cva) and returns a new variant function whose props are the intersection of all the input functions' props. At call time, it invokes each component function with the shared props and joins the results with [`cx`](/api/cx).
+
+This is useful when you want to layer reusable variant sets — for example, a `box` component that handles spacing and a `card` component that handles visual style — and expose them as a single combined component.
+
+## Signature
+
+```typescript
+compose<T extends ReturnType<CVA>[]>(
+  ...components: [...T]
+): (
+  props?: IntersectionOfVariantProps<T> & { class?: ClassValue; className?: ClassValue }
+) => string
+```
+
+## Parameters
+
+<ParamField path="components" type="ReturnType<CVA>[]">
+  Two or more variant functions returned by `cva`. All of their variant props are merged into the returned function's props through TypeScript intersection.
+</ParamField>
+
+## Return value
+
+A new variant function that accepts the intersection of all input component props plus an optional `class` / `className`. Calling it returns a string of space-separated class names produced by each component, in the order they were passed to `compose`.
+
+## Example
+
+```typescript
+import { compose, cva } from "cva";
+
+const box = cva({
+  base: ["box", "box-border"],
+  variants: {
+    margin:  { 0: "m-0",  2: "m-2",  4: "m-4",  8: "m-8" },
+    padding: { 0: "p-0",  2: "p-2",  4: "p-4",  8: "p-8" },
+  },
+  defaultVariants: { margin: 0, padding: 0 },
+});
+
+const card = cva({
+  base: ["card", "border-solid", "border-slate-300", "rounded"],
+  variants: {
+    shadow: { md: "drop-shadow-md", lg: "drop-shadow-lg", xl: "drop-shadow-xl" },
+  },
+});
+
+const cardBox = compose(box, card);
+
+cardBox({ margin: 4, padding: 2, shadow: "lg" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-lg"
+```
+
+You can also extract the merged props type with [`VariantProps`](/api/types/variant-props):
+
+```typescript
+import type { VariantProps } from "cva";
+
+type CardBoxProps = VariantProps<typeof cardBox>;
+// => { margin?: 0 | 2 | 4 | 8; padding?: 0 | 2 | 4 | 8; shadow?: "md" | "lg" | "xl" }
+```
+
+## How `compose` differs from `cx`
+
+| | `compose` | `cx` |
+|---|---|---|
+| Input | `cva` variant functions | Raw class values (strings, arrays, objects) |
+| Props | Merges variant props from all components | No props — just class values |
+| Use case | Combine reusable variant sets into one component | Join class strings at call time |
+
+Use `cx` when you want to concatenate strings. Use `compose` when you want to merge the *prop interfaces* of multiple `cva` components.

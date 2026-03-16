@@ -1,0 +1,168 @@
+---
+title: "cva"
+description: "Builds a component variant function that maps props to class names."
+---
+
+## Overview
+
+`cva` creates a **variant function** for a component. You call `cva` once at definition time — passing base classes and a variant configuration — and get back a function. You then call that function at render time with the active variant props to get a final class name string.
+
+This two-step pattern keeps variant logic colocated with the component and gives you full TypeScript inference on which variant values are valid.
+
+## Signature
+
+<Tabs>
+  <Tab title="class-variance-authority (stable)">
+    ```typescript
+    cva(
+      base?: ClassValue,
+      config?: {
+        variants?: Record<string, Record<string, ClassValue>>;
+        compoundVariants?: Array<
+          VariantConditions & { class?: ClassValue; className?: ClassValue }
+        >;
+        defaultVariants?: Record<string, string | boolean>;
+      }
+    ) => (props?: VariantProps & { class?: ClassValue; className?: ClassValue }) => string
+    ```
+  </Tab>
+  <Tab title="cva (v1 beta)">
+    ```typescript
+    cva(config: {
+      base?: ClassValue;
+      variants?: Record<string, Record<string, ClassValue>>;
+      compoundVariants?: Array<
+        VariantConditions & { class?: ClassValue; className?: ClassValue }
+      >;
+      defaultVariants?: Record<string, string | boolean>;
+    }) => (props?: VariantProps & { class?: ClassValue; className?: ClassValue }) => string
+    ```
+  </Tab>
+</Tabs>
+
+The stable package (`class-variance-authority`) takes `base` and `config` as two separate arguments. The v1 beta (`cva`) collapses both into a single config object with an optional `base` key.
+
+## Parameters
+
+### Stable (`class-variance-authority`)
+
+<ParamField path="base" type="ClassValue">
+  Classes applied unconditionally to every instance of the component. Accepts any value supported by [`ClassValue`](/api/types/class-value) — a string, array, or object.
+</ParamField>
+
+<ParamField path="config.variants" type="object">
+  Maps variant names to their possible values and the classes to apply for each value.
+
+  ```typescript
+  variants: {
+    intent: {
+      primary: "bg-blue-500 text-white",
+      secondary: "bg-white text-gray-800",
+    },
+    size: {
+      small: "text-sm py-1 px-2",
+      medium: "text-base py-2 px-4",
+    },
+  }
+  ```
+
+  Set a variant value to `null` to apply no classes for that combination.
+</ParamField>
+
+<ParamField path="config.compoundVariants" type="array">
+  Conditions under which additional classes are applied. Each entry is an object where variant keys act as filters and `class` (or `className`) holds the classes to apply when all conditions match.
+
+  Variant values in compound conditions can be a single value or an array of values.
+
+  ```typescript
+  compoundVariants: [
+    { intent: "primary", disabled: false, class: "hover:bg-blue-600" },
+    { intent: ["primary", "secondary"], size: "small", class: "font-bold" },
+  ]
+  ```
+</ParamField>
+
+<ParamField path="config.defaultVariants" type="object">
+  Default values for variants when the caller does not provide them. Keys must match variant names; values must be valid keys for that variant.
+
+  ```typescript
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  }
+  ```
+</ParamField>
+
+### Beta (`cva`)
+
+The v1 beta accepts a single config object. All of the fields above are available under that object, plus:
+
+<ParamField path="config.base" type="ClassValue">
+  The base classes to apply unconditionally. Equivalent to the `base` argument in the stable package.
+</ParamField>
+
+## Return value
+
+`cva` returns a **variant function** with the signature:
+
+```typescript
+(props?: VariantProps & { class?: ClassValue; className?: ClassValue }) => string
+```
+
+Call this function with the active variant props and an optional extra `class` or `className` to append. It returns a single string of space-separated class names.
+
+Use [`VariantProps`](/api/types/variant-props) to extract the TypeScript type of the props object.
+
+## Examples
+
+```typescript
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+    disabled: {
+      true: ["opacity-50", "cursor-not-allowed"],
+      false: null,
+    },
+  },
+  compoundVariants: [
+    { intent: "primary",   disabled: false, class: "hover:bg-blue-600" },
+    { intent: "secondary", disabled: false, class: "hover:bg-gray-100" },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+    disabled: false,
+  },
+});
+
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 hover:bg-blue-600"
+
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2 hover:bg-gray-100"
+
+button({ disabled: true });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4 opacity-50 cursor-not-allowed"
+```
+
+Passing `class` or `className` appends extra classes without overriding anything:
+
+```typescript
+button({ class: "my-4" });
+// => "font-semibold border rounded ... hover:bg-blue-600 my-4"
+```
+
+## Notes
+
+- **`null` removes a variant.** In the stable package, passing `null` for a variant key skips that variant's classes entirely. This is useful when you want an explicit "no style" option.
+- **`class` and `className` are passthrough.** Both props are stripped from the [`VariantProps`](/api/types/variant-props) type — they exist only to let callers append one-off classes at the call site.
+- **Boolean variants.** Use string keys `"true"` and `"false"` in your variant map; CVA converts boolean props to strings internally.

@@ -1,0 +1,72 @@
+---
+title: "VariantProps"
+description: "Extracts the variant props from a `cva` component function."
+---
+
+## Overview
+
+`VariantProps` is a TypeScript utility type that extracts the props accepted by a variant function returned from [`cva`](/api/cva). It strips `class`, `className`, and `undefined` from the type, leaving you with only the variant keys and their valid values.
+
+Use it to annotate component prop interfaces without duplicating the variant definitions.
+
+## Definition
+
+```typescript
+type VariantProps<Component extends (...args: any) => any> = Omit<
+  OmitUndefined<Parameters<Component>[0]>,
+  "class" | "className"
+>;
+```
+
+- `OmitUndefined<T>` — resolves `T extends undefined ? never : T`, removing the case where the entire props argument is `undefined`.
+- `Omit<..., "class" | "className">` — removes the passthrough class props that are not part of the component's variant API.
+
+## Generics
+
+<ParamField path="Component" type="(...args: any) => any">
+  Must be a function — specifically the return type of `cva`. Pass `typeof yourVariantFunction` here.
+</ParamField>
+
+## Usage
+
+```typescript
+import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
+
+const button = cva("base", {
+  variants: {
+    intent: { primary: "...", secondary: "..." },
+    size:   { small: "...",   medium: "..." },
+  },
+});
+
+type ButtonVariants = VariantProps<typeof button>;
+// => {
+//      intent?: "primary" | "secondary" | undefined;
+//      size?:   "small"   | "medium"   | undefined;
+//    }
+```
+
+You can extend it with your own props when building a React (or other framework) component:
+
+```typescript
+interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+          VariantProps<typeof button> {}
+
+function Button({ intent, size, className, ...props }: ButtonProps) {
+  return (
+    <button
+      className={button({ intent, size, className })}
+      {...props}
+    />
+  );
+}
+```
+
+## Notes
+
+- **`class` and `className` are excluded.** They are passthrough props handled separately by the variant function itself, not part of the variant API surface.
+- **All variant keys are optional.** CVA treats missing variant props as falling back to `defaultVariants` (or producing no class for that variant if no default is set).
+- **Boolean variants.** If you declare a variant with keys `"true"` / `"false"`, `VariantProps` infers the type as `boolean` because CVA maps boolean props to those string keys internally.
+- **`compose`.** `VariantProps` works equally well with the result of [`compose`](/api/compose) — it will reflect the intersection of all composed components' props.

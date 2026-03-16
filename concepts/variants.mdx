@@ -1,0 +1,101 @@
+---
+title: Variants
+description: Define named groups of classes that map to component props, with full TypeScript inference.
+---
+
+Variants let you define named groups of CSS classes tied to a prop value. When you call your variant function, CVA picks the right classes for each active variant and concatenates them into a single class string.
+
+## Basic example
+
+Pass your base classes as the first argument to `cva`, then define your variants in the config object.
+
+```typescript button.variants.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+});
+
+button({ intent: "primary", size: "medium" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+```
+
+Each key inside `variants` becomes a prop. The value for each key is a map of variant names to their classes. Only one value per variant group is active at a time.
+
+## Base classes
+
+The first argument to `cva` is the `base` — a set of classes applied unconditionally, regardless of which variants are active.
+
+You can express base classes as a string, an array, or any value accepted by [`clsx`](https://github.com/lukeed/clsx):
+
+```typescript
+// String
+const button = cva("font-semibold border rounded", { /* … */ });
+
+// Array
+const button = cva(["font-semibold", "border", "rounded"], { /* … */ });
+
+// Conditional object (clsx syntax)
+const button = cva({ "font-semibold": true, "border": true }, { /* … */ });
+```
+
+<Tip>
+  Arrays keep long class lists readable and let you split classes across lines without string concatenation.
+</Tip>
+
+## Boolean variants
+
+If you use `true` and `false` as variant keys, CVA coerces the incoming boolean prop to a string key before lookup. This lets you write variants that turn a feature on or off.
+
+```typescript button.variants.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    disabled: {
+      true: ["opacity-50", "cursor-not-allowed"],
+      false: null,
+    },
+  },
+  defaultVariants: {
+    disabled: false,
+  },
+});
+
+button({ intent: "primary", disabled: false });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent"
+
+button({ intent: "primary", disabled: true });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent opacity-50 cursor-not-allowed"
+```
+
+<Note>
+  Set a variant key's value to `null` when you want that combination to add no classes. This is common for the `false` case of boolean variants.
+</Note>
+
+## The `class` and `className` props
+
+Every `cva` component accepts an optional `class` or `className` prop that appends extra classes to the output. Use this to add one-off styles without modifying the variant definition.
+
+```typescript
+button({ intent: "primary", size: "medium", class: "mt-4" });
+// => "font-semibold border rounded bg-blue-500 … mt-4"
+```
+
+See [Extending components](/concepts/extending-components) for details on how `class` and `className` work together.

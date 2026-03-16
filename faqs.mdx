@@ -1,0 +1,166 @@
+---
+title: FAQs
+description: Answers to common questions about CVA (Class Variance Authority).
+---
+
+<AccordionGroup>
+  <Accordion title="Why doesn't CVA provide a `styled` API?">
+    CVA encourages you to think of components as traditional CSS classes. A `styled`
+    API is unnecessary because:
+
+    - **Less JavaScript** — static components don't need JavaScript for styling. Ship
+      less to the browser.
+    - **Framework agnostic** — a plain class string is truly reusable across React,
+      Vue, Svelte, and any other framework.
+    - **Polymorphism is free** — apply the class to any HTML element you choose. No
+      `as` prop required.
+    - **Less opinionated** — you decide how to compose and render components. CVA
+      stays out of the way.
+  </Accordion>
+
+  <Accordion title="How can I create responsive variants like Stitches.js?">
+    You can't — and that's intentional. CVA doesn't know how you apply CSS classes,
+    and it doesn't want to.
+
+    There are two practical workarounds:
+
+    **Option 1: Show and hide elements at different breakpoints**
+
+    Render two versions of the component and toggle visibility with Tailwind
+    responsive prefixes:
+
+    ```tsx
+    export const Example = () => (
+      <>
+        <div className="hidden sm:inline-flex">
+          <button className={button({ intent: "primary" })}>Hidden until sm</button>
+        </div>
+        <div className="inline-flex sm:hidden">
+          <button className={button({ intent: "secondary" })}>
+            Hidden after sm
+          </button>
+        </div>
+      </>
+    );
+    ```
+
+    **Option 2: Create a bespoke breakpoint variant**
+
+    Define a variant value that encodes the responsive behavior:
+
+    ```typescript
+    button({ intent: "primaryUntilMd" })
+    ```
+
+    <Note>
+      Responsive variants are intentionally out of scope for CVA. In practice,
+      show/hide is sufficient for most use cases.
+    </Note>
+  </Accordion>
+
+  <Accordion title="What's the difference between `class-variance-authority` and `cva`?">
+    They are two different npm packages at different stages:
+
+    | Package | Status | Version |
+    |---|---|---|
+    | `class-variance-authority` | Stable, production-ready | `0.7.1` |
+    | `cva` | v1 beta | `1.0.0-beta.4` |
+
+    The `cva` package name was transferred to Joe Bell on 2022-02-16. It will be
+    the canonical package name from v1 onwards. The v1 beta introduces the
+    `defineConfig` API and the `compose` utility.
+
+    If you want to import from `"cva"` today without adopting the beta, you can
+    alias the stable package:
+
+    ```bash
+    npm i cva@npm:class-variance-authority
+    ```
+
+    ```typescript
+    import { cva } from "cva";
+    ```
+  </Accordion>
+
+  <Accordion title="Can I use CVA without TypeScript?">
+    Yes. CVA works in plain JavaScript. TypeScript is listed as a peer dependency
+    but is marked optional in `package.json`:
+
+    ```json
+    "peerDependenciesMeta": {
+      "typescript": {
+        "optional": true
+      }
+    }
+    ```
+
+    Without TypeScript you lose type safety for variant props, but the runtime
+    behavior is identical.
+  </Accordion>
+
+  <Accordion title="Does CVA work with SSR/SSG frameworks?">
+    Yes. CVA is a pure computation function with no browser dependencies. It runs
+    in any JavaScript environment — Node.js, Deno, Bun, or the browser.
+
+    <Tip>
+      With SSG frameworks, CVA runs at build time for static components. No
+      JavaScript ships to the browser for those components.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="How do I handle conflicting Tailwind CSS classes?">
+    CVA's variant model prevents most conflicts by design: only one value per
+    variant key is active at a time, so two values from the same variant group can
+    never both be active.
+
+    For the remaining cases — such as a caller passing a `class` or `className`
+    prop that overlaps with a variant class — use
+    [`tailwind-merge`](https://github.com/dcastil/tailwind-merge) via
+    `defineConfig`'s `onComplete` hook:
+
+    ```typescript lib/cva.ts
+    import { defineConfig } from "cva";
+    import { twMerge } from "tailwind-merge";
+
+    export const { cva, cx, compose } = defineConfig({
+      hooks: {
+        onComplete: (className) => twMerge(className),
+      },
+    });
+    ```
+
+    See the [tailwind-merge guide](/guides/tailwind-merge) for full details.
+  </Accordion>
+
+  <Accordion title="Can I use boolean variant values?">
+    Yes. Define variant keys as the string literals `"true"` and `"false"`.
+    CVA maps them to the TypeScript `boolean` type via the internal
+    `StringToBoolean` utility:
+
+    ```typescript
+    const button = cva({
+      base: "font-semibold rounded",
+      variants: {
+        disabled: {
+          true: "opacity-50 cursor-not-allowed",
+          false: null,
+        },
+      },
+    });
+
+    button({ disabled: true });  // => "font-semibold rounded opacity-50 cursor-not-allowed"
+    button({ disabled: false }); // => "font-semibold rounded"
+    ```
+  </Accordion>
+
+  <Accordion title="What CSS-in-JS libraries inspired CVA?">
+    CVA draws on ideas from several projects:
+
+    - **[Stitches](https://stitches.dev/) (WorkOS)** — pioneered the `variants` API
+      that CVA is modelled on.
+    - **[clb](https://github.com/crswll/clb) (Bill Criswell)** — the direct
+      predecessor where the core idea originated.
+    - **[Vanilla Extract](https://vanilla-extract.style/) (Seek)** — a CSS-in-TypeScript
+      alternative that influenced thinking around type-safe styling.
+  </Accordion>
+</AccordionGroup>

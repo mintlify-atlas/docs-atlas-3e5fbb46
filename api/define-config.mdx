@@ -1,0 +1,92 @@
+---
+title: "defineConfig"
+description: "Creates configured instances of `cva`, `cx`, and `compose` with shared options."
+---
+
+<Warning>
+  `defineConfig` is only available in the `cva` package (v1 beta). It is not included in `class-variance-authority` (stable).
+</Warning>
+
+## Overview
+
+`defineConfig` creates a set of [`cva`](/api/cva), [`cx`](/api/cx), and [`compose`](/api/compose) functions that share a common configuration. The primary use case is registering an `onComplete` hook that post-processes every class string those functions produce — for example, running it through `tailwind-merge` to resolve Tailwind conflicts.
+
+The default exports from `cva` are themselves produced by calling `defineConfig()` with no arguments:
+
+```typescript
+export const { compose, cva, cx } = defineConfig();
+```
+
+## Signature
+
+```typescript
+defineConfig(options?: {
+  hooks?: {
+    onComplete?: (className: string) => string;
+    /** @deprecated use onComplete instead */
+    "cx:done"?: (className: string) => string;
+  };
+}): { cva: CVA; cx: CX; compose: Compose }
+```
+
+## Parameters
+
+<ParamField path="options.hooks.onComplete" type="(className: string) => string">
+  A function called with the final, fully-assembled class string before it is returned. Use this to apply transformations such as deduplication or conflict resolution.
+
+  Applies to every class string produced by the `cva`, `cx`, and `compose` instances returned from this call.
+</ParamField>
+
+<ParamField path='options.hooks["cx:done"]' type="(className: string) => string" deprecated>
+  Deprecated. Use `onComplete` instead. Has the same behavior but takes lower priority than `onComplete`.
+</ParamField>
+
+## Return value
+
+<ResponseField name="cva" type="CVA">
+  A `cva` function that uses the configured hooks. See [`cva`](/api/cva).
+</ResponseField>
+
+<ResponseField name="cx" type="CX">
+  A `cx` function that uses the configured hooks. See [`cx`](/api/cx).
+</ResponseField>
+
+<ResponseField name="compose" type="Compose">
+  A `compose` function that uses the configured hooks. See [`compose`](/api/compose).
+</ResponseField>
+
+## Examples
+
+### With tailwind-merge
+
+The most common use case is combining CVA with `tailwind-merge` so that Tailwind utility classes passed via `class` / `className` props correctly override base and variant classes:
+
+```typescript
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+Import `cva`, `cx`, and `compose` from this file throughout your project instead of directly from `cva`.
+
+### No configuration
+
+Calling `defineConfig` without arguments is equivalent to the default exports:
+
+```typescript
+import { defineConfig } from "cva";
+
+const { cva, cx, compose } = defineConfig();
+// identical behavior to the named exports from "cva"
+```
+
+## Notes
+
+- The `onComplete` hook runs after all class values are merged by `clsx`. It receives a single string and must return a string.
+- The hook is applied to **all three** returned functions. If you only want to transform `cx` output, apply the transformation manually at the call site instead.
+- `"cx:done"` is deprecated and will be removed in a future release. Migrate to `onComplete`.

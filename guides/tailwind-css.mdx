@@ -1,0 +1,119 @@
+---
+title: Tailwind CSS
+description: Use CVA with Tailwind CSS, set up IntelliSense autocompletion in your editor, and learn how to handle class conflicts.
+---
+
+CVA works seamlessly with Tailwind CSS. Tailwind classes are plain strings, so you pass them directly into `cva`, `cx`, and `compose` with no special configuration needed.
+
+```typescript button.variants.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "rounded", "border"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent", "hover:bg-blue-600"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400", "hover:bg-gray-50"],
+      danger: ["bg-red-500", "text-white", "border-transparent", "hover:bg-red-600"],
+    },
+    size: {
+      sm: ["text-sm", "py-1", "px-2"],
+      md: ["text-base", "py-2", "px-4"],
+      lg: ["text-lg", "py-3", "px-6"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "md",
+  },
+});
+
+button({ intent: "primary", size: "md" });
+// => "font-semibold rounded border bg-blue-500 text-white border-transparent hover:bg-blue-600 text-base py-2 px-4"
+```
+
+## IntelliSense setup
+
+You can enable Tailwind CSS autocompletion inside `cva` and `cx` calls by telling the Tailwind Language Server to treat them as class functions.
+
+<Tabs>
+  <Tab title="VS Code">
+    <Steps>
+      <Step title="Install the extension">
+        Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) extension from the VS Code Marketplace.
+      </Step>
+      <Step title="Update settings.json">
+        Add the following to your `settings.json`:
+
+        ```json settings.json
+        {
+          "tailwindCSS.classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Zed">
+    Add the following to your `.zed/settings.json`:
+
+    ```json .zed/settings.json
+    {
+      "lsp": {
+        "tailwindcss-language-server": {
+          "settings": {
+            "classFunctions": ["cva", "cx"]
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Neovim">
+    <Steps>
+      <Step title="Install the extension">
+        Install [tailwindcss via nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#tailwindcss).
+      </Step>
+      <Step title="Add configuration">
+        ```lua
+        require('lspconfig').tailwindcss.setup({
+          settings = {
+            tailwindCSS = {
+              classFunctions = { "cva", "cx" },
+            },
+          },
+        })
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="WebStorm">
+    <Steps>
+      <Step title="Check your version">
+        Tailwind CSS configuration support is available in [WebStorm 2023.1](https://www.jetbrains.com/webstorm/whatsnew/#version-2023-1-tailwind-css-configuration) and later.
+      </Step>
+      <Step title="Open Tailwind CSS settings">
+        Go to **Languages and Frameworks | Style Sheets | Tailwind CSS**.
+      </Step>
+      <Step title="Add classFunctions">
+        ```json
+        {
+          "classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Note>
+  If you use a custom `cva` instance created with `defineConfig`, add your export name alongside `"cva"` and `"cx"` in the `classFunctions` array.
+</Note>
+
+## Handling class conflicts
+
+CVA's API is designed to minimize conflicting Tailwind classes. Because each variant key can only have one active value at a time, the common source of conflicts — two utilities targeting the same property — is largely prevented by design.
+
+However, conflicts can still arise when you pass a `class` or `className` prop that overlaps with your variant classes.
+
+<Tip>
+  For complete conflict resolution, integrate `tailwind-merge` with CVA. See the [tailwind-merge guide](/guides/tailwind-merge) for setup instructions.
+</Tip>

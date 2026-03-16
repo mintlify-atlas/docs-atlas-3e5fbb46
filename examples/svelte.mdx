@@ -1,0 +1,114 @@
+---
+title: Svelte
+description: Use CVA in Svelte components to build type-safe, variant-driven UI with full TypeScript support.
+---
+
+CVA works in Svelte components with TypeScript. Define your variants inside the `<script>` block, export your props with default values, and bind the result to the element's `class` attribute.
+
+## Component example
+
+```svelte components/button.svelte
+<script lang="ts">
+  import type { HTMLButtonAttributes } from "svelte/elements";
+  import { cva, type VariantProps } from "class-variance-authority";
+
+  const button = cva("button", {
+    variants: {
+      intent: {
+        primary: "primary",
+        secondary: "secondary",
+      },
+      size: {
+        small: "small",
+        medium: "medium",
+      },
+      disabled: {
+        false: "enabled",
+        true: "disabled",
+      },
+    },
+    compoundVariants: [
+      { intent: "primary", size: "medium", class: "primaryMedium" },
+    ],
+  });
+
+  interface $$Props extends HTMLButtonAttributes, VariantProps<typeof button> {}
+
+  /**
+   * For Svelte components, set your defaultVariants within the exported props
+   * (which are `undefined` by default) rather than inside `cva`.
+   */
+  export let intent: $$Props["intent"] = "primary";
+  export let size: $$Props["size"] = "medium";
+  export let disabled: $$Props["disabled"] = false;
+</script>
+
+<button
+  {...$$props}
+  class={button({ intent, size, disabled, class: $$props.class })}
+  {disabled}
+>
+  <slot />
+</button>
+
+<style>
+  .button {
+    display: inline-flex;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .primary {
+    color: rgb(255 255 255);
+    background-color: rgb(59 130 246);
+    border: transparent;
+  }
+
+  .primary.enabled:hover {
+    background-color: rgb(37 99 235);
+  }
+
+  .secondary {
+    background-color: rgb(255 255 255);
+    color: rgb(31 41 55);
+    border-color: rgb(156 163 175);
+  }
+
+  .secondary.enabled:hover {
+    background-color: rgb(243 244 246);
+  }
+
+  .small {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .medium {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .primaryMedium {
+    text-transform: uppercase;
+  }
+
+  .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
+```
+
+<Note>
+  Set your default variant values in the exported Svelte props rather than in `cva`'s `defaultVariants` option. Svelte props are `undefined` by default, and setting the default at the prop level keeps your component's API and your variant logic consistent.
+</Note>
+
+## Forwarding `$$props`
+
+Spreading `{...$$props}` on the element forwards any extra attributes the parent passes — such as `id`, `aria-*`, or event handlers. CVA's `class` prop in the variant call takes the value from `$$props.class` so that consumers can append one-off classes without modifying the variant definition:
+
+```svelte
+<Button intent="secondary" class="mt-4">Cancel</Button>
+```
+
+The `mt-4` class is appended after the variant classes in the output string.

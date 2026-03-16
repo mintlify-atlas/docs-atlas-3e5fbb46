@@ -1,0 +1,84 @@
+---
+title: "Class Variance Authority"
+description: "A tiny TypeScript utility for building type-safe component class variants."
+---
+
+# Class Variance Authority
+
+**CVA** helps you build type-safe, composable component variants for any CSS approach — Tailwind CSS, CSS Modules, BEM, or plain CSS classes.
+
+CSS-in-TS libraries like [Stitches](https://stitches.dev) and [Vanilla Extract](https://vanilla-extract.style) are fantastic for building type-safe UI components, but they aren't for everyone. You may need full control over your stylesheet output, work with Tailwind CSS, or simply prefer writing your own CSS.
+
+Creating variants with traditional CSS can become tedious: manually matching classes to props, managing combinations, and adding TypeScript types by hand. `cva` takes those pain points away so you can focus on building.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/getting-started/installation">
+    Get `cva` installed with your preferred package manager in seconds.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/getting-started/quickstart">
+    Build your first type-safe component variant in minutes.
+  </Card>
+  <Card title="Core Concepts" icon="layers" href="/concepts/variants">
+    Learn variants, compound variants, and default variants.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/cva">
+    Explore the full API surface: `cva`, `cx`, `compose`, and `defineConfig`.
+  </Card>
+</CardGroup>
+
+## Why CVA?
+
+<CardGroup cols={2}>
+  <Card title="Type-safe variants" icon="shield-check">
+    Full TypeScript inference on all variant props — no manual type definitions needed.
+  </Card>
+  <Card title="Framework agnostic" icon="globe">
+    Works with React, Vue, Svelte, Astro, and any other framework or no framework at all.
+  </Card>
+  <Card title="Tiny bundle" icon="feather">
+    Just ~1.6KB minified and gzipped. Built on top of the battle-tested `clsx` library.
+  </Card>
+  <Card title="Any CSS approach" icon="paintbrush">
+    Tailwind CSS, CSS Modules, BEM, plain CSS — `cva` doesn't care how you write styles.
+  </Card>
+</CardGroup>
+
+## A quick taste
+
+```typescript
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+```
+
+## Acknowledgements
+
+- [**Stitches**](https://stitches.dev/) ([WorkOS](https://workos.com)) — Pioneered the `variants` API that inspired `cva`
+- [**clb**](https://github.com/crswll/clb) ([Bill Criswell](https://github.com/crswll)) — The original idea this project grew from
+- [**clsx**](https://github.com/lukeed/clsx) ([Luke Edwards](https://github.com/lukeed)) — Powers the class concatenation under the hood
+- [**Vanilla Extract**](http://vanilla-extract.style) ([Seek](https://github.com/seek-oss)) — A great CSS-in-TS alternative
+
+## License
+
+[Apache-2.0](https://github.com/joe-bell/cva/blob/main/LICENSE) © [Joe Bell](https://joebell.studio)

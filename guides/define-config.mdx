@@ -1,0 +1,149 @@
+---
+title: defineConfig
+description: Create configured instances of cva, cx, and compose with shared hooks and settings using defineConfig.
+---
+
+`defineConfig` is a factory function that returns a configured set of `cva`, `cx`, and `compose` functions. Use it when you want to apply a consistent transformation — such as class deduplication or merging — to every class string your components produce.
+
+## Default export
+
+The top-level `cva`, `cx`, and `compose` exports are created with a default (no-options) call to `defineConfig`:
+
+```typescript
+export const { compose, cva, cx } = defineConfig();
+```
+
+This means the standard imports work exactly as before. `defineConfig` is only necessary when you need to customize behavior.
+
+## Creating a custom config
+
+Call `defineConfig` with an options object and destructure the returned functions:
+
+```typescript lib/cva.ts
+import { defineConfig } from "class-variance-authority";
+// If using the cva beta: import { defineConfig } from "cva";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => className,
+  },
+});
+```
+
+Then import `cva`, `cx`, and `compose` from your local file instead of the package:
+
+```typescript button.variants.ts
+import { cva } from "./lib/cva";
+
+export const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+});
+```
+
+## The onComplete hook
+
+The `onComplete` hook receives the final concatenated class string and returns a (possibly modified) string. It runs on the output of every `cva`, `cx`, and `compose` call made with that config.
+
+The most common use case is passing the class string through `tailwind-merge` to resolve conflicting Tailwind utilities:
+
+```typescript lib/cva.ts
+import { defineConfig } from "cva";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+You can use any function that accepts and returns a string:
+
+```typescript
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => {
+      // log, transform, deduplicate, etc.
+      return className.trim();
+    },
+  },
+});
+```
+
+## Deprecated cx:done hook
+
+<Warning>
+  The `"cx:done"` hook is deprecated. Use `onComplete` instead. Both hooks have the same signature and behavior; `onComplete` is the current API.
+</Warning>
+
+```typescript
+// Deprecated — avoid in new code
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    "cx:done": (className) => twMerge(className),
+  },
+});
+
+// Use this instead
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+## Sharing config across a project
+
+Create a single `lib/cva.ts` file and import from it throughout your project. This ensures every component uses the same configuration without repeating the setup.
+
+```typescript lib/cva.ts
+import { defineConfig } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+
+// Re-export VariantProps so consumers only need one import path
+export type { VariantProps } from "class-variance-authority";
+```
+
+Then import everything from your local config file:
+
+```typescript button.variants.ts
+import { cva, type VariantProps } from "../lib/cva";
+
+export const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export type ButtonVariants = VariantProps<typeof button>;
+```
+
+<Tip>
+  If you use [path aliases](https://www.typescriptlang.org/tsconfig#paths) in your TypeScript config, set up an alias like `@/lib/cva` to keep imports consistent across deeply nested files.
+</Tip>
+
+## API reference
+
+### defineConfig(options?)
+
+Returns `{ cva, cx, compose }` configured with the provided options.
+
+| Option | Type | Description |
+|---|---|---|
+| `hooks.onComplete` | `(className: string) => string` | Called with the final class string. Return the modified string. |
+| `hooks["cx:done"]` | `(className: string) => string` | Deprecated alias for `onComplete`. |

@@ -1,0 +1,127 @@
+---
+title: Migration
+description: Migrate from the stable class-variance-authority package to the cva v1 beta.
+---
+
+The `cva` v1 beta introduces a new package name, a revised function signature, and
+several new APIs. This page walks you through each change.
+
+<Note>
+  The `class-variance-authority` package continues to receive bug fixes. There
+  is no pressure to migrate immediately.
+</Note>
+
+<Steps>
+  <Step title="Replace the package">
+    Uninstall the stable package and install the beta:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm uninstall class-variance-authority
+    npm install cva@beta
+    ```
+
+    ```bash pnpm
+    pnpm remove class-variance-authority
+    pnpm add cva@beta
+    ```
+
+    ```bash yarn
+    yarn remove class-variance-authority
+    yarn add cva@beta
+    ```
+
+    </CodeGroup>
+
+    Then update your imports:
+
+    ```typescript
+    // Before
+    import { cva, cx, type VariantProps } from "class-variance-authority";
+
+    // After
+    import { cva, cx, type VariantProps } from "cva";
+    ```
+  </Step>
+
+  <Step title="Update the cva function signature">
+    The `cva` function signature changed from positional arguments to a single
+    config object. The base class string moves into a `base` key.
+
+    ```typescript
+    // Before (class-variance-authority stable)
+    const button = cva("base-class", {
+      variants: {
+        intent: { primary: "bg-blue-500 text-white" },
+      },
+      defaultVariants: { intent: "primary" },
+    });
+
+    // After (cva v1 beta)
+    const button = cva({
+      base: "base-class",
+      variants: {
+        intent: { primary: "bg-blue-500 text-white" },
+      },
+      defaultVariants: { intent: "primary" },
+    });
+    ```
+
+    <Warning>
+      This is a breaking change. Every `cva(...)` call that passes a base class
+      string as the first argument must be updated.
+    </Warning>
+  </Step>
+
+  <Step title="Adopt new v1 APIs (optional)">
+    The v1 beta ships two new utilities that have no equivalent in the stable
+    package.
+
+    **`defineConfig`** — create a configured CVA instance, for example to
+    integrate `tailwind-merge` globally:
+
+    ```typescript lib/cva.ts
+    import { defineConfig } from "cva";
+    import { twMerge } from "tailwind-merge";
+
+    export const { cva, cx, compose } = defineConfig({
+      hooks: {
+        onComplete: (className) => twMerge(className),
+      },
+    });
+    ```
+
+    **`compose`** — merge multiple CVA components into one:
+
+    ```typescript
+    import { cva, compose } from "cva";
+
+    const box = cva({ base: "block" });
+    const text = cva({ base: "font-sans text-sm" });
+
+    const card = compose(box, text);
+
+    card(); // => "block font-sans text-sm"
+    ```
+
+    <Note>
+      The deprecated `"cx:done"` hook from earlier beta releases is replaced by
+      `onComplete`. Update any existing hook configurations if you were already
+      on an earlier beta.
+    </Note>
+  </Step>
+</Steps>
+
+## Gradual migration
+
+If you want to adopt the `"cva"` import path today without switching to the beta
+API, alias the stable package:
+
+```bash
+npm i cva@npm:class-variance-authority
+```
+
+This installs `class-variance-authority` under the `cva` name. You can then
+migrate files one at a time — updating to the new config-object signature as
+you go — before eventually switching to `cva@beta`.

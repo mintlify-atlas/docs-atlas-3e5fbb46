@@ -1,0 +1,61 @@
+---
+title: "cx"
+description: "Concatenates class names. An alias for `clsx`."
+---
+
+## Overview
+
+`cx` merges any number of class values into a single, space-separated string. It is a direct re-export of [`clsx`](https://github.com/lukeed/clsx) and supports the same input forms: strings, arrays, objects, and nested combinations. Falsy values (`null`, `undefined`, `false`, `0`) are safely ignored.
+
+When you create a custom instance via [`defineConfig`](/api/define-config), `cx` runs through your `onComplete` hook before returning, which lets you post-process the class string (for example, with `tailwind-merge`).
+
+## Signature
+
+```typescript
+cx(...inputs: ClassValue[]): string
+```
+
+## Parameters
+
+<ParamField path="inputs" type="ClassValue[]">
+  Any number of class values. Each argument can be a string, number, array, object, or any falsy value. See [`ClassValue`](/api/types/class-value) for the full type definition.
+</ParamField>
+
+## Return value
+
+A single string of space-separated class names, with all falsy values removed.
+
+## Examples
+
+```typescript
+import { cx } from "class-variance-authority";
+
+cx("foo", "bar");               // => "foo bar"
+cx("foo", null, "bar");         // => "foo bar"
+cx("foo", undefined);           // => "foo"
+cx("foo", false, "bar");        // => "foo bar"
+cx(["foo", "bar"]);             // => "foo bar"
+cx({ foo: true, bar: false });   // => "foo"
+cx("foo", { bar: true });       // => "foo bar"
+```
+
+Nested arrays and objects work too:
+
+```typescript
+cx(["foo", { bar: true }], ["baz"]);
+// => "foo bar baz"
+```
+
+## Types
+
+The stable package (`class-variance-authority`) exports two additional types derived from `cx`:
+
+- **`CxOptions`** — `Parameters<typeof cx>` — the tuple type of all valid inputs.
+- **`CxReturn`** — `ReturnType<typeof cx>` — always `string`.
+
+The v1 beta (`cva`) exports the equivalent `CXOptions` and `CXReturn` (uppercase CX).
+
+## Notes
+
+- `cx` uses the `onComplete` hook set in [`defineConfig`](/api/define-config) when you create a custom instance. The default exported `cx` has no hook.
+- Because `cx` accepts `ClassValue[]`, you can pass the result of a `cva` variant function directly into `cx` alongside other classes.

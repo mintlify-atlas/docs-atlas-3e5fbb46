@@ -1,0 +1,157 @@
+---
+title: Quickstart
+description: Build a Button component with variants using CVA in under five minutes.
+---
+
+This guide walks you through creating a `Button` component with multiple visual variants using CVA.
+
+<Steps>
+  <Step title="Install the package">
+    Install `class-variance-authority` using your package manager of choice. See the [installation page](/getting-started/installation) for all options.
+
+    ```bash
+    npm i class-variance-authority
+    ```
+  </Step>
+
+  <Step title="Define your variants">
+    Create a variant function using `cva`. Pass your base classes as the first argument, then define your variants in the config object.
+
+    ```typescript button.variants.ts
+    import { cva } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+    ```
+
+    - `base` classes are always applied.
+    - `variants` defines named groups of mutually exclusive classes.
+    - `defaultVariants` sets which variant is active when you don't pass a prop.
+  </Step>
+
+  <Step title="Call the variant function">
+    Call `button()` to generate a class string. Pass props to select specific variants.
+
+    ```typescript
+    // Uses defaultVariants: intent="primary", size="medium"
+    button();
+    // => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+    // Override specific variants
+    button({ intent: "secondary", size: "small" });
+    // => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+    ```
+  </Step>
+
+  <Step title="Use in a React component">
+    Pass the result of your variant function to the `className` prop.
+
+    ```tsx Button.tsx
+    import { cva } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+      intent?: "primary" | "secondary";
+      size?: "small" | "medium";
+    }
+
+    export function Button({ intent, size, ...props }: ButtonProps) {
+      return <button className={button({ intent, size })} {...props} />;
+    }
+    ```
+
+    Use it in your app:
+
+    ```tsx
+    <Button>Submit</Button>
+    <Button intent="secondary" size="small">Cancel</Button>
+    ```
+  </Step>
+
+  <Step title="Extract types with VariantProps">
+    Use the `VariantProps` utility to derive TypeScript types directly from your variant function. This keeps your types and your variants in sync automatically.
+
+    ```tsx Button.tsx
+    import { cva, type VariantProps } from "class-variance-authority";
+
+    const button = cva(["font-semibold", "border", "rounded"], {
+      variants: {
+        intent: {
+          primary: ["bg-blue-500", "text-white", "border-transparent"],
+          secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+        },
+        size: {
+          small: ["text-sm", "py-1", "px-2"],
+          medium: ["text-base", "py-2", "px-4"],
+        },
+      },
+      defaultVariants: {
+        intent: "primary",
+        size: "medium",
+      },
+    });
+
+    // VariantProps infers { intent?: "primary" | "secondary"; size?: "small" | "medium" }
+    type ButtonVariants = VariantProps<typeof button>;
+
+    interface ButtonProps
+      extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+        ButtonVariants {}
+
+    export function Button({ intent, size, ...props }: ButtonProps) {
+      return <button className={button({ intent, size })} {...props} />;
+    }
+    ```
+
+    <Tip>
+      `VariantProps` automatically marks all variant keys as optional when `defaultVariants` is defined, so callers don't need to supply every prop.
+    </Tip>
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Compound variants" icon="layer-group" href="/getting-started/installation">
+    Apply classes when multiple variants are active at the same time.
+  </Card>
+  <Card title="compose" icon="puzzle-piece" href="/getting-started/installation">
+    Combine multiple CVA components into a single variant function.
+  </Card>
+  <Card title="cx" icon="brackets-curly" href="/getting-started/installation">
+    Concatenate class names conditionally with the `cx` helper.
+  </Card>
+  <Card title="defineConfig" icon="sliders" href="/getting-started/installation">
+    Create a configured CVA instance, for example to integrate `tailwind-merge`.
+  </Card>
+</CardGroup>

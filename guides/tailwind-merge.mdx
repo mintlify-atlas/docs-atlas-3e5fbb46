@@ -1,0 +1,110 @@
+---
+title: tailwind-merge
+description: Eliminate conflicting Tailwind classes by integrating tailwind-merge with CVA.
+---
+
+[`tailwind-merge`](https://github.com/dcastil/tailwind-merge) resolves conflicting Tailwind utility classes so that the last one wins. This guide shows you how to integrate it with CVA.
+
+## Why conflicts happen
+
+Tailwind generates utility classes independently. If two classes target the same CSS property — for example, `bg-blue-500` and `bg-red-500` — both end up in the class string and the browser applies whichever appears last in the stylesheet, not last in your string.
+
+This most commonly happens when a caller passes a `class` or `className` prop to override a variant:
+
+```typescript
+button({ intent: "primary", class: "bg-red-500" });
+// => "… bg-blue-500 … bg-red-500"
+// bg-blue-500 may still win depending on stylesheet order
+```
+
+## CVA already minimizes conflicts
+
+CVA's variant model prevents most conflicts by design. Each variant key can only have one active value at a time, so two values from the same variant group can never both be active. For most components, this means class conflicts are not a practical concern.
+
+You only need `tailwind-merge` if:
+
+- Callers pass `class` or `className` props that overlap with variant classes.
+- You use compound variants that may produce overlapping utilities.
+- You compose multiple CVA components whose base classes conflict.
+
+## Option 1: Wrap the output with twMerge
+
+The simplest approach is to wrap individual component calls with `twMerge`:
+
+```typescript button.variants.ts
+import { cva, type VariantProps } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+const buttonVariants = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export interface ButtonVariants extends VariantProps<typeof buttonVariants> {}
+
+export const button = (variants: ButtonVariants) =>
+  twMerge(buttonVariants(variants));
+```
+
+This works, but you have to remember to apply `twMerge` to every component individually.
+
+## Option 2: Use defineConfig with the onComplete hook
+
+A better approach is to configure `twMerge` once using `defineConfig`. The `onComplete` hook runs on every class string produced by `cva`, `cx`, and `compose` from that config.
+
+```typescript lib/cva.ts
+import { defineConfig } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+export const { cva, cx, compose } = defineConfig({
+  hooks: {
+    onComplete: (className) => twMerge(className),
+  },
+});
+```
+
+Import `cva`, `cx`, and `compose` from your local config file instead of the package directly:
+
+```typescript button.variants.ts
+import { cva, type VariantProps } from "./lib/cva";
+
+export const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export type ButtonVariants = VariantProps<typeof button>;
+```
+
+Every `cva`, `cx`, and `compose` call now automatically passes its output through `twMerge`. You don't need to wrap individual components.
+
+<Tip>
+  Export `VariantProps` from your `lib/cva.ts` file so all imports come from a single location.
+</Tip>
+
+## When you need tailwind-merge
+
+| Situation | Needs tailwind-merge? |
+|---|---|
+| Conflicting utilities within a single variant group | No — only one variant value is ever active at a time |
+| `class` / `className` prop overrides a variant utility | Yes |
+| Composing multiple CVA components with overlapping base classes | Yes |
+| No caller overrides, no composition | No |
+
+<Note>
+  `tailwind-merge` adds a small runtime cost. If conflicts are not a concern in your project, you don't need it.
+</Note>
+
+See the [defineConfig guide](/guides/define-config) for more details on the `onComplete` hook and the full `defineConfig` API.

@@ -1,0 +1,113 @@
+---
+title: Composing components
+description: Combine multiple CVA components into one using cx or the compose utility.
+---
+
+You often need a component that merges the props and styles of two separate CVA components. CVA gives you two ways to do this: the `cx` helper for manual composition, and the `compose` utility for automatic prop merging.
+
+## Composing with `cx`
+
+Call each CVA component separately and pass the results to `cx` to concatenate them into a single class string.
+
+```typescript card.ts
+import type { VariantProps } from "class-variance-authority";
+import { cva, cx } from "class-variance-authority";
+
+/**
+ * Box
+ */
+export type BoxProps = VariantProps<typeof box>;
+export const box = cva(["box", "box-border"], {
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: { margin: 0, padding: 0 },
+});
+
+/**
+ * Card base
+ */
+type CardBaseProps = VariantProps<typeof cardBase>;
+const cardBase = cva(["card", "border-solid", "border-slate-300", "rounded"], {
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+/**
+ * Card — combines box and cardBase
+ */
+export interface CardProps extends BoxProps, CardBaseProps {}
+export const card = ({ margin, padding, shadow }: CardProps = {}) =>
+  cx(box({ margin, padding }), cardBase({ shadow }));
+
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+With `cx`, you control exactly which props go to which component. This is the most explicit approach and works with the stable `class-variance-authority` package.
+
+## Composing with `compose`
+
+The `compose` utility (available in the `cva` v1 beta package) merges the variant props of multiple CVA components automatically. The resulting function accepts the union of all props.
+
+```typescript card.ts
+import type { VariantProps } from "cva";
+import { compose, cva } from "cva";
+
+const box = cva({
+  base: ["box", "box-border"],
+  variants: {
+    margin: { 0: "m-0", 2: "m-2", 4: "m-4", 8: "m-8" },
+    padding: { 0: "p-0", 2: "p-2", 4: "p-4", 8: "p-8" },
+  },
+  defaultVariants: { margin: 0, padding: 0 },
+});
+
+const cardBase = cva({
+  base: ["card", "border-solid", "border-slate-300", "rounded"],
+  variants: {
+    shadow: {
+      md: "drop-shadow-md",
+      lg: "drop-shadow-lg",
+      xl: "drop-shadow-xl",
+    },
+  },
+});
+
+// compose merges both components' props into one function
+const card = compose(box, cardBase);
+
+card({ margin: 4, padding: 2, shadow: "md" });
+// => "box box-border m-4 p-2 card border-solid border-slate-300 rounded drop-shadow-md"
+```
+
+`compose` passes the full props object to each component internally, filtering out `class` and `className` before doing so. It appends any `class` or `className` you pass to the composed call at the end.
+
+<Info>
+  `compose` is available in the `cva` package (v1 beta). It is not available in the stable `class-variance-authority` package. Use `cx` for stable-package projects.
+</Info>
+
+## When to use `cx` vs `compose`
+
+<AccordionGroup>
+  <Accordion title="Use cx when…">
+    - You are using the stable `class-variance-authority` package.
+    - You need different props to go to different sub-components (e.g., `box` gets layout props, `cardBase` gets visual props).
+    - You want explicit control over how props are routed.
+  </Accordion>
+  <Accordion title="Use compose when…">
+    - You are using the `cva` v1 beta package.
+    - All composed components can safely receive the same full props object.
+    - You want TypeScript to automatically merge the props of all composed components into a single type.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  You can also use `cx` outside of CVA components — it accepts any `clsx`-compatible values and returns a single class string. This makes it useful for combining arbitrary class names in component templates.
+</Tip>

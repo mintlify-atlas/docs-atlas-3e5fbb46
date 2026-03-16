@@ -1,0 +1,105 @@
+---
+title: Extending components
+description: Pass extra classes to any CVA component using the class or className prop.
+---
+
+Every `cva` component accepts an optional `class` or `className` prop. These props append extra classes to the output, letting you add one-off styles at the call site without modifying the variant definition.
+
+## Using `class` and `className`
+
+```typescript
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+// Using "class" — works in any framework
+button({ class: "m-4" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent m-4"
+
+// Using "className" — natural for React
+button({ className: "m-4" });
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent m-4"
+```
+
+Extra classes are always appended after the variant classes, in the order: `base → variant classes → compound variant classes → class / className`.
+
+## `class` vs `className`
+
+The two props are interchangeable in terms of output, but TypeScript enforces that you pass at most one of them on any single call.
+
+<Warning>
+  Passing both `class` and `className` in the same call is a TypeScript error. Pick one convention and stick to it within a project.
+</Warning>
+
+```typescript
+// Valid
+button({ class: "m-4" });
+button({ className: "m-4" });
+
+// TypeScript error — cannot use both at once
+button({ class: "m-4", className: "m-4" });
+```
+
+Use `class` for framework-agnostic code or when authoring Svelte, Vue, or Astro components. Use `className` when authoring React components, where `className` is the standard prop name.
+
+## React example
+
+Forward the `className` prop from your component to the variant function so callers can pass extra classes through the standard React interface:
+
+```tsx Button.tsx
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+type ButtonVariants = VariantProps<typeof button>;
+
+interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    ButtonVariants {}
+
+export function Button({ intent, size, className, ...props }: ButtonProps) {
+  return (
+    <button
+      className={button({ intent, size, className })}
+      {...props}
+    />
+  );
+}
+```
+
+Callers can now pass a `className` prop alongside variant props:
+
+```tsx
+<Button intent="secondary" size="small" className="mt-4">
+  Cancel
+</Button>
+```
+
+<Tip>
+  When integrating `tailwind-merge`, configure it via `defineConfig` so that conflicting Tailwind classes are resolved correctly across base, variant, and extended classes. See the [tailwind-merge guide](/guides/tailwind-merge).
+</Tip>

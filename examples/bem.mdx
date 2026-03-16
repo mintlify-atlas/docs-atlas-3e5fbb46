@@ -1,0 +1,119 @@
+---
+title: BEM
+description: Use CVA with BEM (Block Element Modifier) class names to manage modifier classes with type safety.
+---
+
+CVA maps naturally to the BEM modifier pattern. Your base class becomes the `cva` base, and each modifier becomes a variant value. CVA handles the logic of combining them — you just pass the variant props.
+
+## Variant function
+
+```typescript components/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+
+export const button = cva("button", {
+  variants: {
+    intent: {
+      primary: "button--primary",
+      secondary: "button--secondary",
+    },
+    size: {
+      small: "button--small",
+      medium: "button--medium",
+    },
+    disabled: {
+      true: "button--disabled",
+      false: null,
+    },
+  },
+  compoundVariants: [
+    {
+      intent: "primary",
+      disabled: false,
+      class: "button--primary-interactive",
+    },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+    disabled: false,
+  },
+});
+
+export type ButtonVariantProps = VariantProps<typeof button>;
+```
+
+## Stylesheet
+
+```css components/button.css
+.button {
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.button--primary {
+  background-color: #3b82f6;
+  color: white;
+  border-color: transparent;
+}
+
+.button--secondary {
+  background-color: white;
+  color: #1f2937;
+  border-color: #9ca3af;
+}
+
+.button--small {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.button--medium {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button--primary-interactive:hover {
+  background-color: #2563eb;
+}
+```
+
+## Usage
+
+```typescript
+button({ intent: "primary", size: "medium" });
+// => "button button--primary button--medium button--primary-interactive"
+
+button({ intent: "secondary" });
+// => "button button--secondary button--medium"
+
+button({ intent: "secondary", disabled: true });
+// => "button button--secondary button--medium button--disabled"
+```
+
+<Note>
+  Setting a variant value to `null` (as with `disabled: { false: null }`) tells CVA to add no class for that combination. This keeps your output clean — the `false` case for a boolean modifier produces no extra class.
+</Note>
+
+## Compound variants with BEM
+
+Compound variants let you apply a modifier class only when a specific combination of other modifiers is active. In the example above, `button--primary-interactive` is applied only when `intent` is `"primary"` and the button is not disabled — a pattern that is awkward to express in plain CSS without extra specificity.
+
+```typescript
+// Compound variant entry
+{
+  intent: "primary",
+  disabled: false,
+  class: "button--primary-interactive",
+}
+```
+
+<Tip>
+  BEM modifier classes are plain strings, so you can use this same approach with any CSS methodology that uses a string-based naming convention — SMACSS, ITCSS, or your own conventions.
+</Tip>

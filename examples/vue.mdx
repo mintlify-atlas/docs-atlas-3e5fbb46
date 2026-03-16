@@ -1,0 +1,172 @@
+---
+title: Vue
+description: Use CVA in Vue 3 components with the Composition API to build type-safe, variant-driven UI.
+---
+
+CVA works in Vue 3 with both Single File Components (SFCs) and plain TypeScript utility files. You define variants with `cva`, extract the prop types with `VariantProps`, and bind the result to `:class`.
+
+## Single File Component
+
+Define your variant function inside `<script setup>` and bind it directly in the template.
+
+```vue components/Button.vue
+<script setup lang="ts">
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva("button", {
+  variants: {
+    intent: {
+      primary: "primary",
+      secondary: "secondary",
+    },
+    size: {
+      small: "small",
+      medium: "medium",
+    },
+    disabled: {
+      true: "disabled",
+      false: "enabled",
+    },
+  },
+  compoundVariants: [
+    { intent: "primary", size: "medium", class: "primaryMedium" },
+  ],
+});
+
+type ButtonProps = VariantProps<typeof button>;
+
+withDefaults(
+  defineProps<{
+    intent?: ButtonProps["intent"];
+    size?: ButtonProps["size"];
+  }>(),
+  {
+    intent: "primary",
+    size: "medium",
+    // Within Vue, `disabled` is defined and included by default.
+    disabled: false,
+  }
+);
+</script>
+
+<template>
+  <button
+    :class="
+      button({
+        intent,
+        size,
+        // Vue passes boolean attributes through $attrs when they are truthy.
+        // https://vuejs.org/guide/essentials/template-syntax.html#boolean-attributes
+        disabled: typeof $attrs['disabled'] !== 'undefined',
+      })
+    "
+    :disabled="typeof $attrs['disabled'] !== 'undefined'"
+  >
+    <slot />
+  </button>
+</template>
+
+<style scoped>
+.button {
+  display: inline-flex;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.primary {
+  color: rgb(255 255 255);
+  background-color: rgb(59 130 246);
+  border: transparent;
+}
+
+.primary.enabled:hover {
+  background-color: rgb(37 99 235);
+}
+
+.secondary {
+  background-color: rgb(255 255 255);
+  color: rgb(31 41 55);
+  border-color: rgb(156 163 175);
+}
+
+.secondary.enabled:hover {
+  background-color: rgb(243 244 246);
+}
+
+.small {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.medium {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.primaryMedium {
+  text-transform: uppercase;
+}
+</style>
+```
+
+<Note>
+  Vue passes `disabled` through `$attrs` when it appears as an HTML attribute on the component. The pattern `typeof $attrs['disabled'] !== 'undefined'` converts that to a boolean so CVA can apply the right variant classes.
+</Note>
+
+## Separate utility file
+
+If you prefer to keep your variant logic outside the component, define it in a plain `.ts` file and import it wherever you need it.
+
+```typescript utils/button.ts
+import { cva, type VariantProps } from "class-variance-authority";
+
+export const buttonVariants = cva("button", {
+  variants: {
+    intent: {
+      primary: "primary",
+      secondary: "secondary",
+    },
+    size: {
+      small: "small",
+      medium: "medium",
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+export type ButtonVariantProps = VariantProps<typeof buttonVariants>;
+```
+
+Then import the function and types directly into any component that needs them:
+
+```vue components/Button.vue
+<script setup lang="ts">
+import { buttonVariants, type ButtonVariantProps } from "../utils/button";
+
+const props = withDefaults(
+  defineProps<{
+    intent?: ButtonVariantProps["intent"];
+    size?: ButtonVariantProps["size"];
+  }>(),
+  { intent: "primary", size: "medium" }
+);
+</script>
+
+<template>
+  <button :class="buttonVariants({ intent: props.intent, size: props.size })">
+    <slot />
+  </button>
+</template>
+```
+
+<Tip>
+  The separate-file approach is useful when you want to reuse the same variant logic in both a Vue component and a non-component context, such as a composable or a server-side rendering utility.
+</Tip>

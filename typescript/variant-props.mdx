@@ -1,0 +1,131 @@
+---
+title: VariantProps
+description: Extract TypeScript types from a CVA component using the VariantProps helper.
+---
+
+`VariantProps` is a TypeScript utility type exported by CVA. It extracts the variant prop types from a `cva` component so you can reuse or extend them elsewhere in your codebase.
+
+## Basic usage
+
+Pass the `typeof` your `cva` component to `VariantProps` to get an object type containing all its variant props.
+
+```typescript button.ts
+import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
+
+export const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white"],
+      secondary: ["bg-white", "text-gray-800"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+});
+
+export type ButtonProps = VariantProps<typeof button>;
+// ButtonProps = {
+//   intent?: "primary" | "secondary" | undefined;
+//   size?: "small" | "medium" | undefined;
+// }
+```
+
+All variant props are optional by default. See [Required variants](/typescript/required-variants) if you need to enforce a value.
+
+## Using `VariantProps` in React components
+
+Extend `VariantProps` alongside native HTML attributes to build a fully typed React component.
+
+```tsx Button.tsx
+import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
+
+const buttonVariants = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white"],
+      secondary: ["bg-white", "text-gray-800"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+});
+
+interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
+
+export function Button({ intent, size, className, ...props }: ButtonProps) {
+  return (
+    <button
+      className={buttonVariants({ intent, size, className })}
+      {...props}
+    />
+  );
+}
+```
+
+This pattern lets callers pass `intent` and `size` as props directly on `<Button>`, with full autocomplete and type checking.
+
+```tsx
+<Button intent="primary" size="medium">
+  Submit
+</Button>
+```
+
+## What `VariantProps` excludes
+
+`VariantProps` strips `class` and `className` from the inferred type:
+
+```typescript
+export type VariantProps<Component extends (...args: any) => any> = Omit<
+  OmitUndefined<Parameters<Component>[0]>,
+  "class" | "className"
+>;
+```
+
+This is intentional. Both `class` and `className` are already part of the `cva` call signature — they are handled by CVA's [extending components](/concepts/extending-components) mechanism. Excluding them from `VariantProps` prevents duplicate prop declarations when you merge `VariantProps` with an HTML attributes type that already includes `className`.
+
+<Note>
+  When you use `VariantProps` with `React.ButtonHTMLAttributes<HTMLButtonElement>`, the `className` prop comes from React's types. CVA's `class` and `className` are separate from this and do not appear in the extracted type.
+</Note>
+
+## Boolean variants and `StringToBoolean`
+
+When you define variant keys as the strings `"true"` and `"false"`, CVA's `StringToBoolean` utility maps them to the TypeScript `boolean` type in the extracted props.
+
+```typescript button.ts
+import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
+
+const button = cva("font-semibold border rounded", {
+  variants: {
+    disabled: {
+      true: ["opacity-50", "cursor-not-allowed"],
+      false: null,
+    },
+  },
+});
+
+type ButtonProps = VariantProps<typeof button>;
+// ButtonProps = { disabled?: boolean | undefined; }
+```
+
+You pass a `boolean` value at the call site, and CVA converts it to the string key internally before looking up the classes.
+
+```typescript
+button({ disabled: true });
+// => "font-semibold border rounded opacity-50 cursor-not-allowed"
+
+button({ disabled: false });
+// => "font-semibold border rounded"
+```
+
+<Tip>
+  Boolean variants are a clean way to model on/off features without requiring callers to pass string literals. Use `"true"` and `"false"` as variant keys and accept a `boolean` prop.
+</Tip>

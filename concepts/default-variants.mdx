@@ -1,0 +1,105 @@
+---
+title: Default variants
+description: Set fallback variant values so your component renders correctly when no props are passed.
+---
+
+Default variants let you specify which variant value is active when a caller does not provide that prop. This means you can call your variant function with no arguments and still get a fully styled output.
+
+## Setting defaults
+
+Add a `defaultVariants` object to your `cva` config. Each key corresponds to a variant group, and the value is the variant that should be active by default.
+
+```typescript button.variants.ts
+import { cva } from "class-variance-authority";
+
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+// No props — defaults apply
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent text-base py-2 px-4"
+
+// Override one default
+button({ intent: "secondary" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-base py-2 px-4"
+
+// Override both defaults
+button({ intent: "secondary", size: "small" });
+// => "font-semibold border rounded bg-white text-gray-800 border-gray-400 text-sm py-1 px-2"
+```
+
+<Tip>
+  When you use `VariantProps` to derive TypeScript types from your variant function, all variant props with defaults are automatically typed as optional. Callers don't need to pass them.
+</Tip>
+
+## Removing a default at call time
+
+To opt out of a default at the call site, pass `null` for that variant. CVA will not apply any classes for that variant when `null` is received.
+
+```typescript
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+// Default applies
+button();
+// => "font-semibold border rounded bg-blue-500 text-white border-transparent"
+
+// Passing null removes the default — no intent classes applied
+button({ intent: null });
+// => "font-semibold border rounded"
+```
+
+This is useful when a parent component controls which variant is active and explicitly wants to render with no intent styling.
+
+## Defaults and compound variants
+
+Default variant values participate in compound variant matching. If a default is active and it satisfies a compound variant's conditions, that compound variant's classes are applied — even when the caller passes no props.
+
+```typescript
+const button = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+      secondary: ["bg-white", "text-gray-800", "border-gray-400"],
+    },
+    size: {
+      small: ["text-sm", "py-1", "px-2"],
+      medium: ["text-base", "py-2", "px-4"],
+    },
+  },
+  compoundVariants: [
+    { intent: "primary", size: "medium", class: "uppercase" },
+  ],
+  defaultVariants: {
+    intent: "primary",
+    size: "medium",
+  },
+});
+
+// Defaults satisfy the compound variant → "uppercase" is applied
+button();
+// => "font-semibold border rounded bg-blue-500 … uppercase"
+```

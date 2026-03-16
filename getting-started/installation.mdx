@@ -1,0 +1,165 @@
+---
+title: Installation
+description: Install CVA (Class Variance Authority) and set up your development environment.
+---
+
+## Install the package
+
+`class-variance-authority` is the stable release. The `cva` package name is reserved for the v1 beta.
+
+<CodeGroup>
+
+```bash npm
+npm i class-variance-authority
+```
+
+```bash pnpm
+pnpm i class-variance-authority
+```
+
+```bash yarn
+yarn add class-variance-authority
+```
+
+```bash bun
+bun add class-variance-authority
+```
+
+</CodeGroup>
+
+Import from the package name:
+
+```typescript
+import { cva, cx, compose } from "class-variance-authority";
+```
+
+## Aliasing to a shorter name
+
+If you prefer to import from `"cva"` instead of `"class-variance-authority"`, you can alias the package:
+
+<Steps>
+  <Step title="Install with an alias">
+    ```bash
+    npm i cva@npm:class-variance-authority
+    ```
+  </Step>
+  <Step title="Import from the alias">
+    ```typescript
+    import { cva, cx, compose } from "cva";
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The short `cva` package name will be used officially from v1 onwards. Until then, `class-variance-authority` remains the stable package.
+</Note>
+
+## Tailwind CSS IntelliSense
+
+If you use Tailwind CSS, you can enable autocompletion inside `cva` and `cx` calls in your editor.
+
+<Tabs>
+  <Tab title="VS Code">
+    <Steps>
+      <Step title="Install the extension">
+        Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) extension from the VS Code Marketplace.
+      </Step>
+      <Step title="Update settings.json">
+        Add the following to your `settings.json`:
+
+        ```json settings.json
+        {
+          "tailwindCSS.classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Zed">
+    Add the following to your `.zed/settings.json`:
+
+    ```json .zed/settings.json
+    {
+      "lsp": {
+        "tailwindcss-language-server": {
+          "settings": {
+            "classFunctions": ["cva", "cx"]
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Neovim">
+    <Steps>
+      <Step title="Install the extension">
+        Install [tailwindcss via nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#tailwindcss).
+      </Step>
+      <Step title="Add configuration">
+        ```lua
+        require('lspconfig').tailwindcss.setup({
+          settings = {
+            tailwindCSS = {
+              classFunctions = { "cva", "cx" },
+            },
+          },
+        })
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="WebStorm">
+    <Steps>
+      <Step title="Check your version">
+        Tailwind CSS configuration support is available in [WebStorm 2023.1](https://www.jetbrains.com/webstorm/whatsnew/#version-2023-1-tailwind-css-configuration) and later.
+      </Step>
+      <Step title="Open Tailwind CSS settings">
+        Go to **Languages and Frameworks | Style Sheets | Tailwind CSS**.
+      </Step>
+      <Step title="Add classFunctions">
+        ```json
+        {
+          "classFunctions": ["cva", "cx"]
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Handling style conflicts
+
+CVA's API is designed to minimize class conflicts, but edge cases can still arise. To eliminate conflicts entirely, use [`tailwind-merge`](https://github.com/dcastil/tailwind-merge) alongside CVA.
+
+<Tip>
+  Wrapping your CVA component with `twMerge` ensures that conflicting Tailwind classes are resolved predictably — the last class wins.
+</Tip>
+
+Install `tailwind-merge`:
+
+```bash
+npm i tailwind-merge
+```
+
+Then wrap your CVA component:
+
+```typescript
+import { cva, type VariantProps } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
+
+const buttonVariants = cva(["font-semibold", "border", "rounded"], {
+  variants: {
+    intent: {
+      primary: ["bg-blue-500", "text-white", "border-transparent"],
+    },
+  },
+  defaultVariants: {
+    intent: "primary",
+  },
+});
+
+export interface ButtonVariants extends VariantProps<typeof buttonVariants> {}
+
+export const button = (variants: ButtonVariants) =>
+  twMerge(buttonVariants(variants));
+```

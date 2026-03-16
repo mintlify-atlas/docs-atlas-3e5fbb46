@@ -1,0 +1,100 @@
+---
+title: "ClassValue"
+description: "The union type for all valid class name inputs, re-exported from `clsx`."
+---
+
+## Overview
+
+`ClassValue` is the union type accepted wherever CVA takes class names: the `base` argument of `cva`, variant values, compound variant conditions, and the `class` / `className` prop. It is re-exported from [`clsx`](https://github.com/lukeed/clsx) and covers every form that `clsx` supports.
+
+## Definition
+
+```typescript
+type ClassValue = ClassArray | ClassDictionary | string | number | bigint | null | boolean | undefined;
+type ClassDictionary = Record<string, any>;
+type ClassArray = ClassValue[];
+```
+
+`ClassArray` is recursive — arrays can contain any `ClassValue`, including other arrays.
+
+## Supported forms
+
+### Strings
+
+The most common form. Multiple classes in a single string are preserved as-is.
+
+```typescript
+const a: ClassValue = "font-bold text-red-500";
+const b: ClassValue = "rounded-md";
+```
+
+### Arrays
+
+Arrays are flattened. Falsy entries are ignored, so inline conditionals work naturally.
+
+```typescript
+const c: ClassValue = ["foo", "bar"];
+const d: ClassValue = ["rounded", false && "hidden"];
+// => "rounded"
+```
+
+### Objects
+
+Keys are included in the output if their value is truthy, excluded if falsy.
+
+```typescript
+const e: ClassValue = { foo: true, bar: false };
+// => "foo"
+```
+
+### Nested
+
+Arrays and objects can be nested to any depth.
+
+```typescript
+const f: ClassValue = [{ foo: true }, ["bar", "baz"]];
+// => "foo bar baz"
+```
+
+### Falsy values
+
+`null`, `undefined`, `false`, `0`, and empty strings are all silently ignored. This makes ternary and short-circuit patterns safe to use directly.
+
+```typescript
+const g: ClassValue = null;      // => ""
+const h: ClassValue = undefined; // => ""
+const i: ClassValue = false;     // => ""
+```
+
+## Examples
+
+```typescript
+import type { ClassValue } from "class-variance-authority";
+
+const classes: ClassValue = ["font-bold", { "text-red-500": isError }];
+const moreClasses: ClassValue = isActive ? "bg-blue-500" : null;
+```
+
+Passing `ClassValue` as a prop type lets callers use any of these forms:
+
+```typescript
+function MyComponent({ className }: { className?: ClassValue }) {
+  return <div className={cx("base-class", className)} />;
+}
+
+// All valid:
+<MyComponent className="extra" />
+<MyComponent className={["extra", isActive && "active"]} />
+<MyComponent className={{ extra: true, active: isActive }} />
+```
+
+## Related types
+
+The `cva` and `class-variance-authority` packages also export helper types derived from [`cx`](/api/cx):
+
+| Type | Package | Definition |
+|------|---------|------------|
+| `CXOptions` | `cva` | `Parameters<CX>` — tuple of `ClassValue[]` |
+| `CXReturn` | `cva` | `ReturnType<CX>` — always `string` |
+| `CxOptions` | `class-variance-authority` | `Parameters<typeof clsx>` |
+| `CxReturn` | `class-variance-authority` | `ReturnType<typeof clsx>` |
